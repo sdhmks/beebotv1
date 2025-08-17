@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bee-Bot Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #334155;
+        }
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .game-area {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1000px;
+            background-color: #e2e8f0;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
+        .canvas-container {
+            flex: 2;
+            position: relative; /* For layering canvases */
+        }
+        .controls-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            border-radius: 0.75rem;
+            touch-action: none;
+        }
+        #beeBotCanvas {
+            position: relative; /* To appear above the path */
+            z-index: 10;
+            border: 4px solid #94a3b8;
+        }
+        #pathCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 5;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        /* D-Pad Layout */
+        #penBtn      { grid-row: 1; grid-column: 1; }
+        #forwardBtn  { grid-row: 1; grid-column: 2; }
+        #nextChallengeBtn { grid-row: 1; grid-column: 3; }
+        #leftBtn     { grid-row: 2; grid-column: 1; }
+        #goBtn       { grid-row: 2; grid-column: 2; }
+        #rightBtn    { grid-row: 2; grid-column: 3; }
+        #homeBtn     { grid-row: 3; grid-column: 1; }
+        #backwardBtn { grid-row: 3; grid-column: 2; }
+        #clearBtn    { grid-row: 3; grid-column: 3; }
+
+        .program-display {
+            background-color: #fff;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            min-height: 4.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+        }
+        .program-icon {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 3rem;
+            height: 3rem;
+            background-color: #f1f5f9;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            user-select: none;
+        }
+        .program-icon svg {
+            width: 2rem;
+            height: 2rem;
+        }
+        .btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-weight: bold;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+        .btn-green { background-color: #4ade80; box-shadow: 0 4px #22c55e; color: #166534; }
+        .btn-blue { background-color: #60a5fa; box-shadow: 0 4px #3b82f6; color: #1e40af; }
+        .btn-red { background-color: #f87171; box-shadow: 0 4px #ef4444; color: #991b1b; }
+        .btn-yellow { background-color: #facc15; box-shadow: 0 4px #eab308; color: #854d0e; }
+        .btn-purple { background-color: #c084fc; box-shadow: 0 4px #a855f7; color: #6b21a8; }
+        .btn-gray { background-color: #cbd5e1; box-shadow: 0 4px #94a3b8; color: #475569; }
+        .btn-gray.active { background-color: #94a3b8; box-shadow: 0 4px #64748b; color: #1e293b; }
+
+        .message-box {
+            position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95); border: 2px solid #16a34a;
+            border-radius: 1rem; padding: 2rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center; z-index: 1000; display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+<div class="container relative">
+    <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 text-gray-800">Bee-Bot Simulator</h1>
+    <button id="fullscreenBtn" class="absolute top-4 right-4 p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition" title="Toggle Fullscreen">
+        <svg id="fullscreenIconOpen" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m0 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m0 0v-4m0 4l-5-5" /></svg>
+        <svg id="fullscreenIconClose" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4l-5 5m0 0l5 5m-5-5h11a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2h.5" /></svg>
+    </button>
+
+    <div class="game-area">
+        <div class="canvas-container">
+            <canvas id="pathCanvas" width="600" height="600"></canvas>
+            <canvas id="beeBotCanvas" width="600" height="600"></canvas>
+        </div>
+        <div class="controls-container">
+            <h2 class="text-2xl font-bold mb-4 text-center">Program</h2>
+            <div id="programDisplay" class="program-display w-full"></div>
+            <h2 class="text-2xl font-bold mt-6 mb-4 text-center">Controls</h2>
+            <div class="controls">
+                <button id="penBtn" class="btn btn-gray" title="Toggle Pen"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M18.04,4.04a2.83,2.83,0,0,0-4,0L3,15.08,3,19a2,2,0,0,0,2,2H8.92L20,9.95a2.83,2.83,0,0,0,0-4ZM7.08,19H5V16.92l8.5-8.5,2.08,2.08Z"/></svg></button>
+                <button id="forwardBtn" class="btn btn-green" title="Move Forward" data-command="forward"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 10h5v10h6V10h5L12 2z"/></svg></button>
+                <button id="nextChallengeBtn" class="btn btn-purple" title="Next Challenge">Next</button>
+                <button id="leftBtn" class="btn btn-blue" title="Turn Left" data-command="left"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
+                <button id="goBtn" class="btn btn-yellow">Go!</button>
+                <button id="rightBtn" class="btn btn-blue" title="Turn Right" data-command="right"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor" transform="scale(-1, 1)"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
+                <button id="homeBtn" class="btn btn-purple" title="Return to Start"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
+                <button id="backwardBtn" class="btn btn-green" title="Move Backward" data-command="backward"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22l8-8h-5V4h-6v10H4l8 8z"/></svg></button>
+                <button id="clearBtn" class="btn btn-red" title="Clear Program"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="messageBox" class="message-box">
+    <p id="messageText" class="text-xl font-bold text-green-700"></p>
+    <button id="messageCloseBtn" class="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg">OK</button>
+</div>
+
+<script>
+    window.onload = function() {
+        const beeBotCanvas = document.getElementById('beeBotCanvas');
+        const ctx = beeBotCanvas.getContext('2d');
+        const pathCanvas = document.getElementById('pathCanvas');
+        const pathCtx = pathCanvas.getContext('2d');
+        console.log('pathCtx:', pathCtx);
+
+        const goBtn = document.getElementById('goBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const backwardBtn = document.getElementById('backwardBtn');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const homeBtn = document.getElementById('homeBtn');
+        const penBtn = document.getElementById('penBtn');
+        const nextChallengeBtn = document.getElementById('nextChallengeBtn');
+        const programDisplay = document.getElementById('programDisplay');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const messageCloseBtn = document.getElementById('messageCloseBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const fullscreenIconOpen = document.getElementById('fullscreenIconOpen');
+        const fullscreenIconClose = document.getElementById('fullscreenIconClose');
+
+        let isPenDown = false;
+        const path = [];
+
+        function togglePen() {
+            isPenDown = !isPenDown;
+            penBtn.classList.toggle('active', isPenDown);
+            console.log('Pen Toggled. isPenDown:', isPenDown);
+        }
+
+        function recordPath(x, y) {
+            if (isPenDown) {
+                path.push({ x, y });
+                console.log('Recording path point:', { x, y }, 'Path length:', path.length);
+                drawPath();
+            } else {
+                console.log('Pen is not down, not recording path.');
+            }
+        }
+
+        function drawPath() {
+            console.log('drawPath called. Path length:', path.length);
+            pathCtx.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
+            console.log('pathCtx strokeStyle (before setting):', pathCtx.strokeStyle, 'lineWidth (before setting):', pathCtx.lineWidth);
+            console.log('pathCanvas dimensions (from context):', pathCtx.canvas.width, pathCtx.canvas.height);
+            if (path.length < 2) {
+                console.log('Path too short to draw.');
+                return;
+            }
+            pathCtx.strokeStyle = '#ef4444';
+            pathCtx.lineWidth = 10;
+            pathCtx.lineCap = 'round';
+            pathCtx.lineJoin = 'round';
+            pathCtx.beginPath();
+            pathCtx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                pathCtx.lineTo(path[i].x, path[i].y);
+            }
+            pathCtx.stroke();
+            console.log('Path drawn.');
+        }
+
+        function clearPath() {
+            path.length = 0;
+            drawPath();
+        }
+
+        penBtn.addEventListener('click', togglePen);
+
+        function toggleFullScreen() {
+            const elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) elem.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function updateFullscreenIcons() {
+            fullscreenIconOpen.classList.toggle('hidden', !!document.fullscreenElement);
+            fullscreenIconClose.classList.toggle('hidden', !document.fullscreenElement);
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullScreen);
+        document.addEventListener('fullscreenchange', updateFullscreenIcons);
+
+        const beeBotImage = new Image();
+        beeBotImage.src = 'beebot.png?' + new Date().getTime();
+        beeBotImage.onload = () => initialize();
+        beeBotImage.onerror = () => alert('Could not load BeeBot image.');
+
+        const gridSize = 6;
+        let cellSize = beeBotCanvas.width / gridSize;
+        let beeBotStartX, beeBotStartY, beeBotStartDir;
+        let beeBotX = 0, beeBotY = 0, beeBotDir = 0;
+        let currentX = 0, currentY = 0, currentDir = 0;
+        let targetX = 0, targetY = 0;
+        const commands = [];
+        let isAnimating = false;
+        let commandIndex = 0;
+
+        function initialize() {
+            beeBotX = Math.floor(Math.random() * gridSize);
+            beeBotY = Math.floor(Math.random() * gridSize);
+            beeBotDir = 0;
+            beeBotStartX = beeBotX;
+            beeBotStartY = beeBotY;
+            beeBotStartDir = beeBotDir;
+            currentX = beeBotX * cellSize;
+            currentY = beeBotY * cellSize;
+            currentDir = beeBotDir;
+            commands.length = 0;
+            clearPath();
+            drawPath();
+            recordPath(currentX + cellSize / 2, currentY + cellSize / 2);
+            pathCanvas.style.display = 'block'; // Ensure pathCanvas is visible
+            do {
+                targetX = Math.floor(Math.random() * gridSize);
+                targetY = Math.floor(Math.random() * gridSize);
+            } while (targetX === beeBotX && targetY === beeBotY);
+            draw();
+            updateProgramDisplay();
+        }
+
+        function returnToHome() {
+            if (isAnimating) return;
+            beeBotX = beeBotStartX;
+            beeBotY = beeBotStartY;
+            beeBotDir = beeBotStartDir;
+            currentX = beeBotX * cellSize;
+            currentY = beeBotY * cellSize;
+            currentDir = beeBotDir;
+            clearPath();
+            drawPath();
+            recordPath(currentX + cellSize / 2, currentY + cellSize / 2);
+            draw();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, beeBotCanvas.width, beeBotCanvas.height);
+            ctx.strokeStyle = '#94a3b8';
+            for (let i = 0; i <= gridSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, beeBotCanvas.height);
+                ctx.stroke();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(beeBotCanvas.width, i * cellSize);
+                ctx.stroke();
+            }
+            drawTarget();
+            drawBeeBot(currentX, currentY, currentDir);
+        }
+
+        function drawTarget() {
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(targetX * cellSize, targetY * cellSize, cellSize, cellSize);
+            const starX = targetX * cellSize + cellSize / 2;
+            const starY = targetY * cellSize + cellSize / 2;
+            ctx.fillStyle = '#fff';
+            drawStar(starX, starY, 20, 5, 0.5);
+        }
+
+        function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx, y = cy;
+            let step = Math.PI / spikes;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawBeeBot(x, y, dir) {
+            const botX = x + cellSize / 2;
+            const botY = y + cellSize / 2;
+            const size = cellSize * 0.7;
+            const angleRad = dir * Math.PI / 180;
+            ctx.save();
+            ctx.translate(botX, botY);
+            ctx.rotate(angleRad);
+            if (beeBotImage.complete) {
+                ctx.drawImage(beeBotImage, -size / 2, -size / 2, size, size);
+            }
+            ctx.restore();
+        }
+
+        function showMessage(text, color = 'text-green-700') {
+            messageText.textContent = text;
+            messageText.className = `text-xl font-bold ${color}`;
+            messageBox.style.display = 'block';
+        }
+
+        function updateProgramDisplay() {
+            programDisplay.innerHTML = '';
+            const icons = {
+                'forward': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#166534"><path d="M12 2L4 10h5v10h6V10h5L12 2z"/></svg>`,
+                'backward': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#166534"><path d="M12 22l8-8h-5V4h-6v10H4l8 8z"/></svg>`,
+                'left': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1e40af"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>`,
+                'right': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1e40af" transform="scale(-1, 1)"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>`
+            };
+            commands.forEach(cmd => {
+                const div = document.createElement('div');
+                div.innerHTML = icons[cmd];
+                div.className = 'program-icon';
+                programDisplay.appendChild(div);
+            });
+        }
+
+        function addCommand(command) {
+            if (isAnimating) return;
+            commands.push(command);
+            updateProgramDisplay();
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+            const targetXPos = beeBotX * cellSize;
+            const targetYPos = beeBotY * cellSize;
+            const targetDir = beeBotDir;
+            let angleDiff = Math.abs(currentDir - targetDir);
+            if (angleDiff > 180) angleDiff = 360 - angleDiff;
+            const hasReachedPosition = Math.abs(currentX - targetXPos) < 1 && Math.abs(currentY - targetYPos) < 1;
+            const hasReachedDirection = angleDiff < 1;
+
+            if (hasReachedPosition && hasReachedDirection) {
+                recordPath(currentX + cellSize / 2, currentY + cellSize / 2);
+                if (commandIndex < commands.length) {
+                    processNextCommand();
+                } else {
+                    isAnimating = false;
+                    programDisplay.childNodes.forEach(child => child.style.backgroundColor = 'transparent');
+                    if (beeBotX === targetX && beeBotY === targetY) {
+                        showMessage("You did it! Bee-Bot reached the target!", 'text-green-700');
+                    } else {
+                        showMessage("Bee-Bot finished its program, but didn't reach the target.", 'text-blue-700');
+                    }
+                }
+            } else {
+                currentX += (targetXPos - currentX) * 0.1;
+                currentY += (targetYPos - currentY) * 0.1;
+                let dDir = targetDir - currentDir;
+                if (dDir > 180) dDir -= 360;
+                if (dDir < -180) dDir += 360;
+                currentDir += dDir * 0.1;
+                recordPath(currentX + cellSize / 2, currentY + cellSize / 2);
+                console.log('Animating - calling recordPath');
+            }
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        function processNextCommand() {
+            if (commandIndex >= commands.length) return;
+            if (commandIndex > 0) {
+                programDisplay.childNodes[commandIndex - 1].style.backgroundColor = 'transparent';
+            }
+            programDisplay.childNodes[commandIndex].style.backgroundColor = '#fef08a';
+            const command = commands[commandIndex];
+            const oldX = beeBotX, oldY = beeBotY;
+            switch (command) {
+                case 'forward':
+                    if (beeBotDir === 0) beeBotY--; else if (beeBotDir === 90) beeBotX++; else if (beeBotDir === 180) beeBotY++; else if (beeBotDir === 270) beeBotX--;
+                    break;
+                case 'backward':
+                    if (beeBotDir === 0) beeBotY++; else if (beeBotDir === 90) beeBotX--; else if (beeBotDir === 180) beeBotY--; else if (beeBotDir === 270) beeBotX++;
+                    break;
+                case 'left':
+                    beeBotDir = (beeBotDir - 90 + 360) % 360;
+                    break;
+                case 'right':
+                    beeBotDir = (beeBotDir + 90) % 360;
+                    break;
+            }
+            if (beeBotX < 0 || beeBotX >= gridSize || beeBotY < 0 || beeBotY >= gridSize) {
+                isAnimating = false;
+                beeBotX = oldX;
+                beeBotY = oldY;
+                draw();
+                showMessage("Oops! Bee-Bot fell off the grid.", 'text-red-700');
+                return;
+            }
+            commandIndex++;
+        }
+
+        function executeProgram() {
+            if (commands.length === 0 || isAnimating) return;
+            returnToHome();
+            isAnimating = true;
+            commandIndex = 0;
+            setTimeout(() => {
+                processNextCommand();
+                animate();
+            }, 50);
+        }
+
+        [forwardBtn, backwardBtn, leftBtn, rightBtn].forEach(btn => {
+            btn.addEventListener('click', () => addCommand(btn.dataset.command));
+        });
+        goBtn.addEventListener('click', executeProgram);
+        homeBtn.addEventListener('click', returnToHome);
+        nextChallengeBtn.addEventListener('click', () => {
+            if (isAnimating) return;
+            initialize();
+        });
+        function clearProgramSteps() {
+            commands.length = 0;
+            updateProgramDisplay();
+            console.log('Program steps cleared.');
+        }
+
+        clearBtn.addEventListener('click', () => {
+            if (isAnimating) return;
+            clearProgramSteps();
+        });
+        messageCloseBtn.addEventListener('click', () => {
+            messageBox.style.display = 'none';
+            if (messageText.textContent.includes("You did it!")) {
+                initialize();
+            }
+        });
+
+        function resizeCanvas() {
+            const containerWidth = beeBotCanvas.parentElement.clientWidth;
+            const size = Math.min(containerWidth, 600);
+            beeBotCanvas.width = size;
+            beeBotCanvas.height = size;
+            pathCanvas.width = size;
+            pathCanvas.height = size;
+            cellSize = beeBotCanvas.width / gridSize;
+            currentX = beeBotX * cellSize;
+            currentY = beeBotY * cellSize;
+            draw();
+            drawPath();
+            console.log('Canvas resized. beeBotCanvas:', beeBotCanvas.width, beeBotCanvas.height, 'pathCanvas:', pathCanvas.width, pathCanvas.height, 'cellSize:', cellSize);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    };
+</script>
+
+</body>
+</html>
