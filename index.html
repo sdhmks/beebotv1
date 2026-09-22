@@ -11,9 +11,11 @@
             font-family: 'Inter', sans-serif;
             background-color: #f0f4f8;
             color: #334155;
+            overflow-x: hidden;
         }
         .container {
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -44,7 +46,7 @@
         }
         canvas {
             border-radius: 0.75rem;
-            touch-action: none;
+            touch-action: manipulation;
         }
         #beeBotCanvas {
             position: relative; /* To appear above the path */
@@ -56,6 +58,7 @@
             top: 0;
             left: 0;
             z-index: 5;
+            border: 4px solid #94a3b8;
         }
         .controls {
             display: grid;
@@ -113,6 +116,8 @@
             border-radius: 1rem;
             font-weight: bold;
             transition: transform 0.1s, box-shadow 0.1s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         .btn:active {
             transform: translateY(2px);
@@ -125,6 +130,76 @@
         .btn-purple { background-color: #c084fc; box-shadow: 0 4px #a855f7; color: #6b21a8; }
         .btn-gray { background-color: #cbd5e1; box-shadow: 0 4px #94a3b8; color: #475569; }
         .btn-gray.active { background-color: #94a3b8; box-shadow: 0 4px #64748b; color: #1e293b; }
+        .btn:disabled {
+            opacity: 0.45;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #fullscreenBtn {
+            top: calc(1rem + env(safe-area-inset-top, 0px));
+            right: calc(1rem + env(safe-area-inset-right, 0px));
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                justify-content: flex-start;
+                padding-top: calc(4rem + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+            }
+            .container h1 {
+                font-size: 1.5rem;
+                margin-bottom: 0.25rem;
+            }
+            #levelLabel {
+                margin-bottom: 0.75rem;
+            }
+            .game-area {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+                padding: 1rem;
+                border-radius: 1rem;
+            }
+            .canvas-container {
+                flex: none;
+                width: 100%;
+            }
+            .controls-container {
+                flex: none;
+                width: 100%;
+            }
+            .controls-container h2 {
+                font-size: 1.25rem;
+                margin-bottom: 0.5rem;
+            }
+            .controls {
+                max-width: none;
+                gap: 0.75rem;
+                margin-top: 0.5rem;
+            }
+            .btn {
+                padding: 1rem;
+                min-height: 56px;
+            }
+            .program-display {
+                min-height: 3.5rem;
+                padding: 0.5rem;
+                margin-top: 0.5rem;
+            }
+            .program-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+            .program-icon svg {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+            .message-box {
+                width: 85%;
+                padding: 1.5rem;
+            }
+        }
 
         .message-box {
             position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%);
@@ -137,7 +212,8 @@
 <body class="bg-gray-100">
 
 <div class="container relative">
-    <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 text-gray-800">Bee-Bot Simulator</h1>
+    <h1 class="text-3xl sm:text-4xl font-bold text-center mb-2 text-gray-800">Bee-Bot Simulator</h1>
+    <p id="levelLabel" class="text-center text-base sm:text-lg font-semibold text-gray-600 mb-4">Level 1 / 20</p>
     <button id="fullscreenBtn" class="absolute top-4 right-4 p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition" title="Toggle Fullscreen">
         <svg id="fullscreenIconOpen" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m0 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m0 0v-4m0 4l-5-5" /></svg>
         <svg id="fullscreenIconClose" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4l-5 5m0 0l5 5m-5-5h11a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2h.5" /></svg>
@@ -153,9 +229,9 @@
             <div id="programDisplay" class="program-display w-full"></div>
             <h2 class="text-2xl font-bold mt-6 mb-4 text-center">Controls</h2>
             <div class="controls">
-                <button id="penBtn" class="btn btn-gray" title="Toggle Pen"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M18.04,4.04a2.83,2.83,0,0,0-4,0L3,15.08,3,19a2,2,0,0,0,2,2H8.92L20,9.95a2.83,2.83,0,0,0,0-4ZM7.08,19H5V16.92l8.5-8.5,2.08,2.08Z"/></svg></button>
+                <button id="penBtn" class="btn btn-gray active" title="Toggle Pen"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M18.04,4.04a2.83,2.83,0,0,0-4,0L3,15.08,3,19a2,2,0,0,0,2,2H8.92L20,9.95a2.83,2.83,0,0,0,0-4ZM7.08,19H5V16.92l8.5-8.5,2.08,2.08Z"/></svg></button>
                 <button id="forwardBtn" class="btn btn-green" title="Move Forward" data-command="forward"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 10h5v10h6V10h5L12 2z"/></svg></button>
-                <button id="nextChallengeBtn" class="btn btn-purple" title="Next Challenge">Next</button>
+                <button id="nextChallengeBtn" class="btn btn-purple" title="Next Challenge" disabled>Next</button>
                 <button id="leftBtn" class="btn btn-blue" title="Turn Left" data-command="left"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
                 <button id="goBtn" class="btn btn-yellow">Go!</button>
                 <button id="rightBtn" class="btn btn-blue" title="Turn Right" data-command="right"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor" transform="scale(-1, 1)"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg></button>
@@ -196,8 +272,9 @@
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const fullscreenIconOpen = document.getElementById('fullscreenIconOpen');
         const fullscreenIconClose = document.getElementById('fullscreenIconClose');
+        const levelLabel = document.getElementById('levelLabel');
 
-        let isPenDown = false;
+        let isPenDown = true;
         const path = [];
 
         function togglePen() {
@@ -267,8 +344,38 @@
         beeBotImage.onload = () => initialize();
         beeBotImage.onerror = () => alert('Could not load BeeBot image.');
 
-        const gridSize = 4;
+        const flowerImage = new Image();
+        flowerImage.src = 'flower.png?' + new Date().getTime();
+        flowerImage.onload = () => draw();
+
+        const levels = [
+            { gridSize: 4, start: { x: 1, y: 2, dir: 0 },   target: { x: 1, y: 0 }, obstacles: [] },
+            { gridSize: 4, start: { x: 0, y: 2, dir: 90 },  target: { x: 2, y: 2 }, obstacles: [] },
+            { gridSize: 4, start: { x: 0, y: 2, dir: 0 },   target: { x: 2, y: 0 }, obstacles: [] },
+            { gridSize: 4, start: { x: 1, y: 2, dir: 0 },   target: { x: 2, y: 1 }, obstacles: [] },
+            { gridSize: 4, start: { x: 2, y: 0, dir: 0 },   target: { x: 2, y: 2 }, obstacles: [] },
+            { gridSize: 4, start: { x: 0, y: 2, dir: 0 },   target: { x: 2, y: 2 }, obstacles: [{ x: 0, y: 1 }] },
+            { gridSize: 4, start: { x: 0, y: 3, dir: 0 },   target: { x: 0, y: 0 }, obstacles: [] },
+            { gridSize: 4, start: { x: 0, y: 3, dir: 0 },   target: { x: 3, y: 0 }, obstacles: [] },
+            { gridSize: 4, start: { x: 0, y: 0, dir: 180 }, target: { x: 3, y: 3 }, obstacles: [] },
+            { gridSize: 4, start: { x: 1, y: 3, dir: 0 },   target: { x: 3, y: 1 }, obstacles: [{ x: 1, y: 1 }] },
+            { gridSize: 4, start: { x: 0, y: 3, dir: 90 },  target: { x: 3, y: 0 }, obstacles: [{ x: 3, y: 2 }] },
+            { gridSize: 5, start: { x: 0, y: 4, dir: 0 },   target: { x: 0, y: 0 }, obstacles: [] },
+            { gridSize: 5, start: { x: 0, y: 4, dir: 90 },  target: { x: 4, y: 0 }, obstacles: [] },
+            { gridSize: 5, start: { x: 4, y: 0, dir: 0 },   target: { x: 4, y: 4 }, obstacles: [] },
+            { gridSize: 5, start: { x: 2, y: 4, dir: 0 },   target: { x: 2, y: 0 }, obstacles: [{ x: 2, y: 2 }] },
+            { gridSize: 5, start: { x: 0, y: 1, dir: 90 },  target: { x: 4, y: 3 }, obstacles: [{ x: 2, y: 0 }, { x: 2, y: 1 }] },
+            { gridSize: 6, start: { x: 0, y: 5, dir: 0 },   target: { x: 0, y: 0 }, obstacles: [] },
+            { gridSize: 6, start: { x: 0, y: 5, dir: 0 },   target: { x: 5, y: 0 }, obstacles: [] },
+            { gridSize: 6, start: { x: 5, y: 5, dir: 270 }, target: { x: 0, y: 0 }, obstacles: [{ x: 4, y: 5 }] },
+            { gridSize: 6, start: { x: 0, y: 5, dir: 90 },  target: { x: 5, y: 0 }, obstacles: [{ x: 3, y: 5 }, { x: 4, y: 5 }] }
+        ];
+        let currentLevel = 0;
+        let gridSize = levels[0].gridSize;
         let cellSize = beeBotCanvas.width / gridSize;
+        let canvasSize = beeBotCanvas.width;
+        let obstacles = [];
+        let challengeSolved = false;
         let beeBotStartX, beeBotStartY, beeBotStartDir;
         let beeBotX = 0, beeBotY = 0, beeBotDir = 0;
         let currentX = 0, currentY = 0, currentDir = 0;
@@ -276,26 +383,31 @@
         const commands = [];
         let isAnimating = false;
         let commandIndex = 0;
+        let bounce = null;
+        let impactAngle = 0;
 
         function initialize() {
-            beeBotX = Math.floor(Math.random() * gridSize);
-            beeBotY = Math.floor(Math.random() * gridSize);
-            beeBotDir = 0;
+            const level = levels[currentLevel];
+            gridSize = level.gridSize;
+            cellSize = canvasSize / gridSize;
+            obstacles = level.obstacles;
+            beeBotX = level.start.x;
+            beeBotY = level.start.y;
+            beeBotDir = level.start.dir;
             beeBotStartX = beeBotX;
             beeBotStartY = beeBotY;
             beeBotStartDir = beeBotDir;
             currentX = beeBotX * cellSize;
             currentY = beeBotY * cellSize;
             currentDir = beeBotDir;
+            targetX = level.target.x;
+            targetY = level.target.y;
+            levelLabel.textContent = `Level ${currentLevel + 1} / ${levels.length}`;
             commands.length = 0;
             clearPath();
             drawPath();
             recordPath(currentX + cellSize / 2, currentY + cellSize / 2);
             pathCanvas.style.display = 'block'; // Ensure pathCanvas is visible
-            do {
-                targetX = Math.floor(Math.random() * gridSize);
-                targetY = Math.floor(Math.random() * gridSize);
-            } while (targetX === beeBotX && targetY === beeBotY);
             draw();
             updateProgramDisplay();
         }
@@ -315,56 +427,61 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, beeBotCanvas.width, beeBotCanvas.height);
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
             ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
             for (let i = 0; i <= gridSize; i++) {
                 ctx.beginPath();
                 ctx.moveTo(i * cellSize, 0);
-                ctx.lineTo(i * cellSize, beeBotCanvas.height);
+                ctx.lineTo(i * cellSize, canvasSize);
                 ctx.stroke();
+                ctx.beginPath();
                 ctx.moveTo(0, i * cellSize);
-                ctx.lineTo(beeBotCanvas.width, i * cellSize);
+                ctx.lineTo(canvasSize, i * cellSize);
                 ctx.stroke();
             }
+            drawObstacles();
             drawTarget();
             drawBeeBot(currentX, currentY, currentDir);
         }
 
-        function drawTarget() {
-            ctx.fillStyle = '#facc15';
-            ctx.fillRect(targetX * cellSize, targetY * cellSize, cellSize, cellSize);
-            const starX = targetX * cellSize + cellSize / 2;
-            const starY = targetY * cellSize + cellSize / 2;
-            ctx.fillStyle = '#fff';
-            drawStar(starX, starY, 20, 5, 0.5);
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                const pad = cellSize * 0.12;
+                const x = obs.x * cellSize + pad;
+                const y = obs.y * cellSize + pad;
+                const s = cellSize - pad * 2;
+                ctx.fillStyle = '#78716c';
+                ctx.strokeStyle = '#57534e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                if (typeof ctx.roundRect === 'function') {
+                    ctx.roundRect(x, y, s, s, cellSize * 0.15);
+                } else {
+                    ctx.rect(x, y, s, s);
+                }
+                ctx.fill();
+                ctx.stroke();
+            });
         }
 
-        function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
-            let rot = Math.PI / 2 * 3;
-            let x = cx, y = cy;
-            let step = Math.PI / spikes;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy - outerRadius);
-            for (let i = 0; i < spikes; i++) {
-                x = cx + Math.cos(rot) * outerRadius;
-                y = cy + Math.sin(rot) * outerRadius;
-                ctx.lineTo(x, y);
-                rot += step;
-                x = cx + Math.cos(rot) * innerRadius;
-                y = cy + Math.sin(rot) * innerRadius;
-                ctx.lineTo(x, y);
-                rot += step;
+        function drawTarget() {
+            const size = cellSize * 0.85;
+            const x = targetX * cellSize + (cellSize - size) / 2;
+            const y = targetY * cellSize + (cellSize - size) / 2;
+            if (flowerImage.complete && flowerImage.naturalWidth > 0) {
+                ctx.drawImage(flowerImage, x, y, size, size);
+            } else {
+                ctx.fillStyle = '#f472b6';
+                ctx.fillRect(targetX * cellSize, targetY * cellSize, cellSize, cellSize);
             }
-            ctx.lineTo(cx, cy - outerRadius);
-            ctx.closePath();
-            ctx.fill();
         }
 
         function drawBeeBot(x, y, dir) {
             const botX = x + cellSize / 2;
             const botY = y + cellSize / 2;
             const size = cellSize * 0.7;
-            const angleRad = dir * Math.PI / 180;
+            const angleRad = (dir + impactAngle) * Math.PI / 180;
             ctx.save();
             ctx.translate(botX, botY);
             ctx.rotate(angleRad);
@@ -404,8 +521,14 @@
 
         function animate() {
             if (!isAnimating) return;
-            const targetXPos = beeBotX * cellSize;
-            const targetYPos = beeBotY * cellSize;
+            let targetXPos, targetYPos;
+            if (bounce) {
+                targetXPos = bounce.phase === 'out' ? bounce.outX : bounce.backX;
+                targetYPos = bounce.phase === 'out' ? bounce.outY : bounce.backY;
+            } else {
+                targetXPos = beeBotX * cellSize;
+                targetYPos = beeBotY * cellSize;
+            }
             const targetDir = beeBotDir;
             let angleDiff = Math.abs(currentDir - targetDir);
             if (angleDiff > 180) angleDiff = 360 - angleDiff;
@@ -414,15 +537,36 @@
 
             if (hasReachedPosition && hasReachedDirection) {
                 recordPath(currentX + cellSize / 2, currentY + cellSize / 2);
-                if (commandIndex < commands.length) {
+                if (bounce) {
+                    if (bounce.phase === 'out') {
+                        const md = bounce.moveDir;
+                        impactAngle = (md === 0 || md === 270) ? 14 : -14;
+                        bounce.phase = 'back';
+                    } else {
+                        currentX = bounce.backX;
+                        currentY = bounce.backY;
+                        bounce = null;
+                        impactAngle = 0;
+                        isAnimating = false;
+                        programDisplay.childNodes.forEach(child => child.style.backgroundColor = 'transparent');
+                        showMessage("Oops! Bee-Bot fell off the grid.", 'text-red-700');
+                    }
+                } else if (commandIndex < commands.length) {
                     processNextCommand();
                 } else {
                     isAnimating = false;
                     programDisplay.childNodes.forEach(child => child.style.backgroundColor = 'transparent');
                     if (beeBotX === targetX && beeBotY === targetY) {
-                        showMessage("You did it! Bee-Bot reached the target!", 'text-green-700');
+                        challengeSolved = true;
+                        const isLastLevel = currentLevel === levels.length - 1;
+                        showMessage(
+                            isLastLevel
+                                ? "Congratulations! You finished all 20 levels!"
+                                : "You did it! Bee-Bot reached the flower!",
+                            'text-green-700'
+                        );
                     } else {
-                        showMessage("Bee-Bot finished its program, but didn't reach the target.", 'text-blue-700');
+                        showMessage("Bee-Bot finished its program, but didn't reach the flower.", 'text-blue-700');
                     }
                 }
             } else {
@@ -432,6 +576,10 @@
                 if (dDir > 180) dDir -= 360;
                 if (dDir < -180) dDir += 360;
                 currentDir += dDir * 0.1;
+                if (impactAngle !== 0) {
+                    impactAngle *= 0.85;
+                    if (Math.abs(impactAngle) < 0.2) impactAngle = 0;
+                }
                 recordPath(currentX + cellSize / 2, currentY + cellSize / 2);
                 console.log('Animating - calling recordPath');
             }
@@ -462,11 +610,30 @@
                     break;
             }
             if (beeBotX < 0 || beeBotX >= gridSize || beeBotY < 0 || beeBotY >= gridSize) {
+                beeBotX = oldX;
+                beeBotY = oldY;
+                const moveDir = command === 'forward' ? beeBotDir : (beeBotDir + 180) % 360;
+                const half = cellSize * 0.35;
+                let outX = oldX * cellSize;
+                let outY = oldY * cellSize;
+                if (moveDir === 0) {
+                    outY = half - cellSize / 2;
+                } else if (moveDir === 90) {
+                    outX = canvasSize - half - cellSize / 2;
+                } else if (moveDir === 180) {
+                    outY = canvasSize - half - cellSize / 2;
+                } else if (moveDir === 270) {
+                    outX = half - cellSize / 2;
+                }
+                bounce = { phase: 'out', outX, outY, backX: oldX * cellSize, backY: oldY * cellSize, moveDir };
+                return;
+            }
+            if (obstacles.some(obs => obs.x === beeBotX && obs.y === beeBotY)) {
                 isAnimating = false;
                 beeBotX = oldX;
                 beeBotY = oldY;
                 draw();
-                showMessage("Oops! Bee-Bot fell off the grid.", 'text-red-700');
+                showMessage("Oops! Bee-Bot hit an obstacle!", 'text-red-700');
                 return;
             }
             commandIndex++;
@@ -501,31 +668,50 @@
         clearBtn.addEventListener('click', () => {
             if (isAnimating) return;
             clearProgramSteps();
+            returnToHome();
         });
         messageCloseBtn.addEventListener('click', () => {
             messageBox.style.display = 'none';
-            if (messageText.textContent.includes("You did it!")) {
+            if (challengeSolved) {
+                challengeSolved = false;
+                currentLevel = (currentLevel + 1) % levels.length;
                 initialize();
             }
         });
 
-        function resizeCanvas() {
+        let lastLayoutWidth = -1;
+
+        function resizeCanvas(force = false) {
             const containerWidth = beeBotCanvas.parentElement.clientWidth;
-            const size = Math.min(containerWidth, 600);
-            beeBotCanvas.width = size;
-            beeBotCanvas.height = size;
-            pathCanvas.width = size;
-            pathCanvas.height = size;
-            cellSize = beeBotCanvas.width / gridSize;
+            if (!force && containerWidth === lastLayoutWidth) return;
+            lastLayoutWidth = containerWidth;
+            const canvasBorder = 8; // 4px border on each side
+            const available = containerWidth - canvasBorder;
+            const isMobile = window.innerWidth <= 768;
+            const heightCap = isMobile ? window.innerHeight * 0.55 : Infinity;
+            const size = Math.max(1, Math.min(available, 600, heightCap));
+            const dpr = window.devicePixelRatio || 1;
+            canvasSize = size;
+            beeBotCanvas.width = Math.round(size * dpr);
+            beeBotCanvas.height = Math.round(size * dpr);
+            beeBotCanvas.style.width = size + 'px';
+            beeBotCanvas.style.height = size + 'px';
+            pathCanvas.width = Math.round(size * dpr);
+            pathCanvas.height = Math.round(size * dpr);
+            pathCanvas.style.width = size + 'px';
+            pathCanvas.style.height = size + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            pathCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            cellSize = size / gridSize;
             currentX = beeBotX * cellSize;
             currentY = beeBotY * cellSize;
             draw();
             drawPath();
-            console.log('Canvas resized. beeBotCanvas:', beeBotCanvas.width, beeBotCanvas.height, 'pathCanvas:', pathCanvas.width, pathCanvas.height, 'cellSize:', cellSize);
+            console.log('Canvas resized. size:', size, 'dpr:', dpr, 'cellSize:', cellSize);
         }
 
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', () => resizeCanvas());
+        resizeCanvas(true);
     };
 </script>
 
